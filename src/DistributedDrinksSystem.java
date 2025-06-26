@@ -105,6 +105,22 @@ class Order {
             System.out.println("\n=== Final Business Report ===");
             System.out.println("Total Business Sales: KES " + total);
         }
+    }
+    //Main simulation for demo
+    public class DistributedDrinksSystem{
+        public static void main(String[] args){
+            //create HQ
+            Headquarters hq = new Headquarters();
+            //create branches
+            Branch Nakuru = new Branch("NAKURU");
+            Branch Mombasa = new Branch("MOMBASA");
+            Branch Kisusmu = new Branch("KISUMU");
+            Branch Nairobi = new Branch("NAIROBI");
 
+            hq.reqisterBranch(Nakuru);
+            hq.reqisterBranch(Mombasa);
+            hq.reqisterBranch(Kisusmu);
+            hq.reqisterBranch(Nairobi);
+        }
     }
 }
