@@ -80,4 +80,31 @@ class Order {
             System.out.println("Total sales: KES "+getTotalSales());
         }
     }
+    //Headquarters management
+    class Headquarters{
+        Map<String, Branch> branches = new HashMap<>();
+
+        public void reqisterBranch(.Branch b) {
+            branches.put(b.name, b);
+        }
+        public void distributedStock(String drinkId, String drinkName, double price, int quantity, List<String> branchNames){
+            for (String branchName:branchNames){
+                Branch b= branches.get(branchName);
+                if(b != null){
+                    Drink drink = new Drink(drinkId, drinkName, price, quantity);
+                    b.addDrink(drink);
+                }
+            }
+        }
+        public void printAllreports(){
+            double total = 0;
+            for(Branch b: branches.values()){
+                b.printBranchReport();
+                total += b.getTotalSales();
+            }
+            System.out.println("\n=== Final Business Report ===");
+            System.out.println("Total Business Sales: KES " + total);
+        }
+
+    }
 }
