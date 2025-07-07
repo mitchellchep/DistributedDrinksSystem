@@ -3,8 +3,7 @@ package shared;
 import java.io.Serializable;
 
 public class Drink implements Serializable {
-    public String id;
-    public String name;
+    public String id, name;
     public double price;
     public int quantity;
 

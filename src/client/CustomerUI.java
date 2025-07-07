@@ -25,7 +25,7 @@ public class CustomerUI extends JFrame {
         setLayout(new BorderLayout());
 
         // === Form Panel ===
-        JPanel form = new JPanel(new GridLayout(7, 2, 10, 10));
+        JPanel form = new JPanel(new GridLayout(8, 2, 10, 10));
         form.setBorder(BorderFactory.createEmptyBorder(20, 20, 10, 20));
 
         ipField = new JTextField("127.0.0.1"); // default to localhost
@@ -45,10 +45,21 @@ public class CustomerUI extends JFrame {
         form.add(new JLabel("Quantity:"));
         form.add(qtyField);
 
+        // === Buttons ===
         JButton placeOrderBtn = new JButton("Place Order");
         placeOrderBtn.addActionListener(this::placeOrder);
-        form.add(new JLabel()); // filler
+
+        JButton resetBtn = new JButton("Place Another Order");
+        resetBtn.addActionListener(evt -> {
+            nameField.setText("");
+            qtyField.setText("");
+            drinkCombo.setSelectedIndex(0);
+            branchCombo.setSelectedIndex(0);
+            output.setText("");
+        });
+
         form.add(placeOrderBtn);
+        form.add(resetBtn);
 
         // === Output area ===
         output = new JTextArea();
@@ -80,8 +91,9 @@ public class CustomerUI extends JFrame {
 
             boolean success = service.placeOrder(order);
             if (success) {
-                output.setText("✅ Order placed successfully!\n\n");
-                output.append(service.getBranchReport(branch));
+                double totalCost = price * quantity;
+                output.setText("✅ Order placed successfully!\n");
+                output.append("💰 Total: KES " + totalCost + "\n");
             } else {
                 output.setText("❌ Order failed. Not enough stock or error.");
             }
@@ -91,6 +103,7 @@ public class CustomerUI extends JFrame {
             ex.printStackTrace();
         }
     }
+
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(CustomerUI::new);

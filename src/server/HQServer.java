@@ -2,20 +2,23 @@ package server;
 
 import shared.OrderService;
 
+import java.rmi.Naming;
 import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
-import java.rmi.server.UnicastRemoteObject;
 
 public class HQServer {
     public static void main(String[] args) {
         try {
-            Headquarters hq = new Headquarters();
+            // 👇 Add this line to explicitly bind to your Linux IP
+            System.setProperty("java.rmi.server.hostname", "192.168.100.33");
 
-            OrderService stub = (OrderService) UnicastRemoteObject.exportObject(hq, 0);
-            Registry registry = LocateRegistry.createRegistry(1099);
-            registry.rebind("OrderService", stub);
+            LocateRegistry.createRegistry(1099);
 
-            System.out.println("HQ Server is running...");
+            OrderService hq = new Headquarters();
+
+            // 👇 Update this line to use your Linux IP in the RMI URL
+            Naming.rebind("rmi://192.168.100.33:1099/OrderService", hq);
+
+            System.out.println("✅ HQ Server ready at 192.168.100.33:1099.");
         } catch (Exception e) {
             e.printStackTrace();
         }

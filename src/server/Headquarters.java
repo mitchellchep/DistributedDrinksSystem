@@ -3,49 +3,23 @@ package server;
 import shared.*;
 
 import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-public class Headquarters implements OrderService {
+public class Headquarters extends UnicastRemoteObject implements OrderService {
     private Map<String, Branch> branches = new HashMap<>();
 
-    public Headquarters() {
-        initializeBranches();
-    }
-
-    public void initializeBranches() {
-        Branch nakuru = new Branch("NAKURU");
-        Branch mombasa = new Branch("MOMBASA");
-        Branch kisumu = new Branch("KISUMU");
-        Branch nairobi = new Branch("NAIROBI");
-
-        registerBranch(nakuru);
-        registerBranch(mombasa);
-        registerBranch(kisumu);
-        registerBranch(nairobi);
-
-        distributeStock("D001", "Coca Cola", 100, 20, List.of("NAKURU", "MOMBASA", "KISUMU", "NAIROBI"));
-        distributeStock("D002", "Pepsi", 90, 20, List.of("NAKURU", "MOMBASA", "KISUMU", "NAIROBI"));
-    }
-
-    public void registerBranch(Branch branch) {
-        branches.put(branch.getName(), branch);
-    }
-
-    public void distributeStock(String id, String name, double price, int quantity, List<String> branchNames) {
-        for (String branchName : branchNames) {
-            Branch branch = branches.get(branchName);
-            if (branch != null) {
-                Drink drink = new Drink(id, name, price, quantity);
-                branch.addDrink(drink);
-            }
-        }
+    public Headquarters() throws RemoteException {
+        branches.put("NAKURU", new Branch("NAKURU"));
+        branches.put("MOMBASA", new Branch("MOMBASA"));
+        branches.put("KISUMU", new Branch("KISUMU"));
+        branches.put("NAIROBI", new Branch("NAIROBI"));
     }
 
     @Override
     public boolean placeOrder(Order order) throws RemoteException {
-        Branch branch = branches.get(order.branch);
+        Branch branch = branches.get(order.branch.toUpperCase());
         if (branch != null) {
             return branch.processOrder(order);
         }
@@ -53,23 +27,21 @@ public class Headquarters implements OrderService {
     }
 
     @Override
-    public String getBranchReport(String branchName) throws RemoteException {
-        Branch branch = branches.get(branchName);
-        if (branch != null) {
-            return branch.getReportText();
+    public String getFinalBusinessReport() throws RemoteException {
+        StringBuilder sb = new StringBuilder("=== Final HQ Report ===\n");
+        double totalSales = 0;
+        for (Branch b : branches.values()) {
+            sb.append(b.getReportText()).append("\n");
+            totalSales += b.getTotalSales();
         }
-        return "Branch not found.";
+        sb.append("==== Total Company Sales: KES ").append(totalSales).append(" ====");
+        return sb.toString();
     }
 
     @Override
-    public String getFinalBusinessReport() throws RemoteException {
-        StringBuilder report = new StringBuilder();
-        double total = 0;
+    public void resetSystem() throws RemoteException {
         for (Branch b : branches.values()) {
-            report.append(b.getReportText());
-            total += b.getTotalSales();
+            b.reset();
         }
-        report.append("\n=== Final Business Report ===\nTotal Sales: KES ").append(total);
-        return report.toString();
     }
 }

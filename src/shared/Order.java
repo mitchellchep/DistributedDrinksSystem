@@ -1,7 +1,6 @@
 package shared;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
 import java.util.List;
 
 public class Order implements Serializable {
@@ -10,7 +9,6 @@ public class Order implements Serializable {
     public String branch;
     public List<Drink> drinksOrdered;
     public double totalPrice;
-    public LocalDateTime orderTime;
 
     public Order(String orderId, String customerName, String branch, List<Drink> drinksOrdered) {
         this.orderId = orderId;
@@ -18,6 +16,5 @@ public class Order implements Serializable {
         this.branch = branch;
         this.drinksOrdered = drinksOrdered;
         this.totalPrice = drinksOrdered.stream().mapToDouble(d -> d.price * d.quantity).sum();
-        this.orderTime = LocalDateTime.now();
     }
 }

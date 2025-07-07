@@ -13,6 +13,8 @@ public class Branch {
 
     public Branch(String name) {
         this.name = name;
+        addDrink(new Drink("D001", "Coca Cola", 100, 20));
+        addDrink(new Drink("D002", "Pepsi", 90, 20));
     }
 
     public String getName() {
@@ -25,23 +27,14 @@ public class Branch {
 
     public boolean processOrder(Order order) {
         for (Drink d : order.drinksOrdered) {
-            Drink branchDrink = stock.get(d.id);
-            if (branchDrink == null || branchDrink.quantity < d.quantity) return false;
+            Drink stockDrink = stock.get(d.id);
+            if (stockDrink == null || stockDrink.quantity < d.quantity) return false;
         }
         for (Drink d : order.drinksOrdered) {
             stock.get(d.id).quantity -= d.quantity;
         }
         orders.add(order);
-        checkStockLevels();
         return true;
-    }
-
-    private void checkStockLevels() {
-        for (Drink d : stock.values()) {
-            if (d.quantity < MIN_THRESHOLD) {
-                System.out.println("[LOW STOCK ALERT] " + d.name + " at " + name);
-            }
-        }
     }
 
     public double getTotalSales() {
@@ -58,5 +51,12 @@ public class Branch {
         }
         sb.append("Total Sales: KES ").append(getTotalSales()).append("\n");
         return sb.toString();
+    }
+
+    public void reset() {
+        stock.clear();
+        orders.clear();
+        addDrink(new Drink("D001", "Coca Cola", 100, 20));
+        addDrink(new Drink("D002", "Pepsi", 90, 20));
     }
 }
