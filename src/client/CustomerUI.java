@@ -86,7 +86,7 @@ public class CustomerUI extends JFrame {
             String drinkName = drinkSelection.contains("Coca") ? "Coca Cola" : "Pepsi";
             double price = drinkId.equals("D001") ? 100 : 90;
 
-            Drink drink = new Drink(drinkId, drinkName, price, quantity);
+            Drink drink = new Drink(drinkName, price, quantity);
             Order order = new Order("ORD" + System.currentTimeMillis(), customerName, branch, List.of(drink));
 
             boolean success = service.placeOrder(order);
