@@ -4,6 +4,7 @@ import shared.Drink;
 import shared.Order;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class Branch {
@@ -13,22 +14,26 @@ public class Branch {
     public Branch(String name) {
         this.name = name;
 
-        // ✅ Fixed constructor calls (only name, price, quantity)
-        drinks.put("Coca Cola", new Drink("Coca Cola", 100.0, 10));
-        drinks.put("Pepsi", new Drink("Pepsi", 90.0, 15));
+        // Add drinks using their names as keys
+        drinks.put("Coca Cola", new Drink("D001", "Coca Cola", 100.0, 10));
+        drinks.put("Pepsi", new Drink("D002", "Pepsi", 90.0, 15));
     }
 
     public boolean processOrder(Order order) {
-        for (Drink ordered : order.drinksOrdered) {
-            Drink stock = drinks.get(ordered.name);
-            if (stock == null || stock.quantity < ordered.quantity) {
+        List<Drink> orderedDrinks = order.getDrinks();
+
+        // Check availability
+        for (Drink ordered : orderedDrinks) {
+            Drink stock = drinks.get(ordered.getName());
+            if (stock == null || stock.getQuantity() < ordered.getQuantity()) {
                 return false;
             }
         }
 
-        for (Drink ordered : order.drinksOrdered) {
-            Drink stock = drinks.get(ordered.name);
-            stock.quantity -= ordered.quantity;
+        // Deduct stock
+        for (Drink ordered : orderedDrinks) {
+            Drink stock = drinks.get(ordered.getName());
+            stock.setQuantity(stock.getQuantity() - ordered.getQuantity());
         }
 
         return true;
@@ -37,18 +42,18 @@ public class Branch {
     public String getReportText() {
         StringBuilder sb = new StringBuilder("[" + name + "] Sales Report:\n");
         for (Drink d : drinks.values()) {
-            sb.append(d.name).append(" - Remaining Stock: ").append(d.quantity).append("\n");
+            sb.append(d.getName()).append(" - Remaining Stock: ").append(d.getQuantity()).append("\n");
         }
         return sb.toString();
     }
 
     public double getTotalSales() {
-        // Optional: Implement logic if needed
+        // Optional logic can go here (e.g., price * quantity sold)
         return 0;
     }
 
     public void reset() {
-        drinks.get("Coca Cola").quantity = 10;
-        drinks.get("Pepsi").quantity = 15;
+        drinks.get("Coca Cola").setQuantity(10);
+        drinks.get("Pepsi").setQuantity(15);
     }
 }

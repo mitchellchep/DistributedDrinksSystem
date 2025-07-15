@@ -1,98 +1,58 @@
 package server;
 
 import shared.*;
-import utils.DBConnection;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class Headquarters extends UnicastRemoteObject implements OrderService {
-    private Map<String, Branch> branches = new HashMap<>();
+    private Map<String, List<Order>> branchOrders;
+    private List<Drink> menu;
 
     public Headquarters() throws RemoteException {
-        branches.put("NAKURU", new Branch("NAKURU"));
-        branches.put("MOMBASA", new Branch("MOMBASA"));
-        branches.put("KISUMU", new Branch("KISUMU"));
-        branches.put("NAIROBI", new Branch("NAIROBI"));
+        branchOrders = new HashMap<>();
+        menu = List.of(
+                new Drink("D001", "Coca Cola", 100, 100),
+                new Drink("D002", "Pepsi", 90, 100)
+        );
     }
 
     @Override
-    public boolean placeOrder(Order order) throws RemoteException {
-        System.out.println("➡️ Received order: " + order.orderId + " for customer " + order.customerName);
-        Branch branch = branches.get(order.branch.toUpperCase());
-
-        if (branch == null) {
-            System.out.println("❌ Invalid branch: " + order.branch);
-            return false;
-        }
-
-        boolean success = branch.processOrder(order);
-        if (!success) {
-            System.out.println("❌ Order failed due to insufficient stock or drink not found.");
-            return false;
-        }
-
-        System.out.println("✅ Order processed, saving to DB...");
-        saveOrderToDatabase(order);
+    public synchronized boolean placeOrder(Order order) throws RemoteException {
+        List<Order> orders = branchOrders.computeIfAbsent(order.getBranch(), k -> new ArrayList<>());
+        orders.add(order);
         return true;
     }
 
-
-
-    private void saveOrderToDatabase(Order order) {
-        try (Connection conn = DBConnection.getConnection()) {
-            System.out.println("📝 Writing to DB..."); // ← Add this here
-
-            String sql = "INSERT INTO orders (order_id, customer_name, branch, drink_name, quantity, price_per_unit, total_price) " +
-                    "VALUES (?, ?, ?, ?, ?, ?, ?)";
-
-            PreparedStatement stmt = conn.prepareStatement(sql);
-
-            for (Drink d : order.drinksOrdered) {
-                double totalDrinkPrice = d.price * d.quantity;
-
-                stmt.setString(1, order.orderId);
-                stmt.setString(2, order.customerName);
-                stmt.setString(3, order.branch);
-                stmt.setString(4, d.name);
-                stmt.setInt(5, d.quantity);
-                stmt.setDouble(6, d.price);
-                stmt.setDouble(7, totalDrinkPrice);
-
-                stmt.addBatch();
-            }
-
-            stmt.executeBatch();
-            System.out.println("✅ Order saved to DB: " + order.orderId);
-
-        } catch (SQLException e) {
-            System.err.println("❌ Error saving to DB: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-
     @Override
-    public String getFinalBusinessReport() throws RemoteException {
-        StringBuilder sb = new StringBuilder("=== Final HQ Report ===\n");
-        double totalSales = 0;
-        for (Branch b : branches.values()) {
-            sb.append(b.getReportText()).append("\n");
-            totalSales += b.getTotalSales();
+    public synchronized String getBranchReport(String branchName) throws RemoteException {
+        List<Order> orders = branchOrders.getOrDefault(branchName, new ArrayList<>());
+        StringBuilder report = new StringBuilder("Branch Report for " + branchName + ":\n");
+        for (Order order : orders) {
+            report.append("Order ID: ").append(order.getOrderId())
+                    .append(", Customer: ").append(order.getCustomerName())
+                    .append(", Drinks: ").append(order.getDrinks()).append("\n");
         }
-        sb.append("==== Total Company Sales: KES ").append(totalSales).append(" ====");
-        return sb.toString();
+        return report.toString();
     }
 
     @Override
-    public void resetSystem() throws RemoteException {
-        for (Branch b : branches.values()) {
-            b.reset();
+    public synchronized String getFinalBusinessReport() throws RemoteException {
+        StringBuilder report = new StringBuilder("Final Business Report:\n");
+        for (String branch : branchOrders.keySet()) {
+            report.append(getBranchReport(branch)).append("\n");
         }
+        return report.toString();
+    }
+
+    @Override
+    public synchronized void resetSystem() throws RemoteException {
+        branchOrders.clear();
+    }
+
+    @Override
+    public List<Drink> getAvailableDrinks() throws RemoteException {
+        return menu;
     }
 }

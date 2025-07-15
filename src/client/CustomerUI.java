@@ -3,109 +3,109 @@ package client;
 import shared.*;
 
 import javax.swing.*;
-import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.List;
 
 public class CustomerUI extends JFrame {
-
-    private JTextField nameField;
-    private JComboBox<String> branchCombo;
-    private JComboBox<String> drinkCombo;
-    private JTextField qtyField;
-    private JTextField ipField;
-    private JTextArea output;
+    private JTextField customerField;
+    private JComboBox<String> branchBox;
+    private JComboBox<String> drinkBox;
+    private JTextField quantityField;
+    private JTextArea outputArea;
+    private OrderService service;
 
     public CustomerUI() {
-        setTitle("Customer Order - Distributed Drinks");
-        setSize(400, 500);
+        try {
+            String host = JOptionPane.showInputDialog("Enter HQ Server IP:");
+            Registry registry = LocateRegistry.getRegistry(host, 1099);
+            service = (OrderService) registry.lookup("OrderService");
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "❌ Failed to connect to server.");
+            e.printStackTrace();
+            System.exit(1);
+        }
+
+        setTitle("Drink Ordering System");
+        setSize(400, 300);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setLayout(new BorderLayout());
+        setLayout(null);
 
-        // === Form Panel ===
-        JPanel form = new JPanel(new GridLayout(8, 2, 10, 10));
-        form.setBorder(BorderFactory.createEmptyBorder(20, 20, 10, 20));
+        JLabel nameLabel = new JLabel("Customer:");
+        nameLabel.setBounds(10, 10, 100, 20);
+        add(nameLabel);
 
-        ipField = new JTextField("127.0.0.1"); // default to localhost
-        nameField = new JTextField();
-        branchCombo = new JComboBox<>(new String[]{"NAKURU", "MOMBASA", "KISUMU", "NAIROBI"});
-        drinkCombo = new JComboBox<>(new String[]{"D001 - Coca Cola", "D002 - Pepsi"});
-        qtyField = new JTextField();
+        customerField = new JTextField();
+        customerField.setBounds(120, 10, 200, 20);
+        add(customerField);
 
-        form.add(new JLabel("Server IP:"));
-        form.add(ipField);
-        form.add(new JLabel("Your Name:"));
-        form.add(nameField);
-        form.add(new JLabel("Select Branch:"));
-        form.add(branchCombo);
-        form.add(new JLabel("Select Drink:"));
-        form.add(drinkCombo);
-        form.add(new JLabel("Quantity:"));
-        form.add(qtyField);
+        JLabel branchLabel = new JLabel("Branch:");
+        branchLabel.setBounds(10, 40, 100, 20);
+        add(branchLabel);
 
-        // === Buttons ===
-        JButton placeOrderBtn = new JButton("Place Order");
-        placeOrderBtn.addActionListener(this::placeOrder);
+        branchBox = new JComboBox<>(new String[]{"NAKURU", "MOMBASA", "KISUMU", "NAIROBI"});
+        branchBox.setBounds(120, 40, 200, 20);
+        add(branchBox);
 
-        JButton resetBtn = new JButton("Place Another Order");
-        resetBtn.addActionListener(evt -> {
-            nameField.setText("");
-            qtyField.setText("");
-            drinkCombo.setSelectedIndex(0);
-            branchCombo.setSelectedIndex(0);
-            output.setText("");
-        });
+        JLabel drinkLabel = new JLabel("Drink:");
+        drinkLabel.setBounds(10, 70, 100, 20);
+        add(drinkLabel);
 
-        form.add(placeOrderBtn);
-        form.add(resetBtn);
+        drinkBox = new JComboBox<>();
+        try {
+            List<Drink> drinks = service.getAvailableDrinks();
+            for (Drink d : drinks) {
+                drinkBox.addItem(d.getId() + ": " + d.getName());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        drinkBox.setBounds(120, 70, 200, 20);
+        add(drinkBox);
 
-        // === Output area ===
-        output = new JTextArea();
-        output.setEditable(false);
-        output.setBorder(BorderFactory.createTitledBorder("Status"));
+        JLabel qtyLabel = new JLabel("Quantity:");
+        qtyLabel.setBounds(10, 100, 100, 20);
+        add(qtyLabel);
 
-        add(form, BorderLayout.NORTH);
-        add(new JScrollPane(output), BorderLayout.CENTER);
-        setVisible(true);
+        quantityField = new JTextField();
+        quantityField.setBounds(120, 100, 200, 20);
+        add(quantityField);
+
+        JButton orderBtn = new JButton("Place Order");
+        orderBtn.setBounds(120, 130, 200, 25);
+        add(orderBtn);
+
+        outputArea = new JTextArea();
+        outputArea.setBounds(10, 170, 360, 80);
+        add(outputArea);
+
+        orderBtn.addActionListener(this::placeOrder);
     }
 
     private void placeOrder(ActionEvent e) {
         try {
-            String serverIP = ipField.getText().trim();
-            Registry registry = LocateRegistry.getRegistry(serverIP, 1099);
-            OrderService service = (OrderService) registry.lookup("OrderService");
+            String name = customerField.getText();
+            String branch = (String) branchBox.getSelectedItem();
+            String drinkId = ((String) drinkBox.getSelectedItem()).split(":")[0];
+            int qty = Integer.parseInt(quantityField.getText());
 
-            String customerName = nameField.getText().trim();
-            String branch = (String) branchCombo.getSelectedItem();
-            String drinkSelection = (String) drinkCombo.getSelectedItem();
-            int quantity = Integer.parseInt(qtyField.getText().trim());
+            Drink drink = switch (drinkId) {
+                case "D001" -> new Drink("D001", "Coca Cola", 100, qty);
+                case "D002" -> new Drink("D002", "Pepsi", 90, qty);
+                default -> null;
+            };
 
-            String drinkId = drinkSelection.startsWith("D001") ? "D001" : "D002";
-            String drinkName = drinkSelection.contains("Coca") ? "Coca Cola" : "Pepsi";
-            double price = drinkId.equals("D001") ? 100 : 90;
-
-            Drink drink = new Drink(drinkName, price, quantity);
-            Order order = new Order("ORD" + System.currentTimeMillis(), customerName, branch, List.of(drink));
-
+            Order order = new Order("ORD" + System.currentTimeMillis(), name, branch, List.of(drink));
             boolean success = service.placeOrder(order);
-            if (success) {
-                double totalCost = price * quantity;
-                output.setText("✅ Order placed successfully!\n");
-                output.append("💰 Total: KES " + totalCost + "\n");
-            } else {
-                output.setText("❌ Order failed. Not enough stock or error.");
-            }
-
+            outputArea.setText(success ? "✅ Order placed." : "❌ Order failed.");
         } catch (Exception ex) {
-            output.setText("❌ Error: " + ex.getMessage());
             ex.printStackTrace();
+            outputArea.setText("❌ Error placing order.");
         }
     }
 
-
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(CustomerUI::new);
+        SwingUtilities.invokeLater(() -> new CustomerUI().setVisible(true));
     }
 }
